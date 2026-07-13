@@ -2,11 +2,13 @@ import { App, PluginSettingTab, Setting } from 'obsidian';
 import OpenAlephPlugin from './main';
 
 export interface OpenAlephPluginSettings {
-	mySetting: string;
+	apiKey: string;
+	instanceUrl: string;
 }
 
 export const DEFAULT_SETTINGS: OpenAlephPluginSettings = {
-	mySetting: 'default',
+	apiKey: 'key',
+	instanceUrl: 'https://search.openaleph.org',
 };
 
 export class SampleSettingTab extends PluginSettingTab {
@@ -23,14 +25,29 @@ export class SampleSettingTab extends PluginSettingTab {
 		containerEl.empty();
 
 		new Setting(containerEl)
-			.setName('Settings #1')
-			.setDesc("It's a secret")
+			.setName('API Key')
+			.setDesc(
+				'Put API Secret Access Key from https://your-openaleph-instance/settings',
+			)
 			.addText((text) =>
 				text
-					.setPlaceholder('Enter your secret')
-					.setValue(this.plugin.settings.mySetting)
+					.setPlaceholder('where does this placeholder go?')
+					.setValue(this.plugin.settings.apiKey)
 					.onChange(async (value) => {
-						this.plugin.settings.mySetting = value;
+						this.plugin.settings.apiKey = value;
+						await this.plugin.saveSettings();
+					}),
+			);
+
+		new Setting(containerEl)
+			.setName('API URL')
+			.setDesc('Your OpenAleph Instance')
+			.addText((text) =>
+				text
+					.setPlaceholder('where does this placeholder go?')
+					.setValue(this.plugin.settings.instanceUrl)
+					.onChange(async (value) => {
+						this.plugin.settings.instanceUrl = value;
 						await this.plugin.saveSettings();
 					}),
 			);

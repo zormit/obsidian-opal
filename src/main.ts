@@ -5,12 +5,16 @@ import {
 	Modal,
 	Notice,
 	Plugin,
+	requestUrl,
 } from 'obsidian';
 import {
 	DEFAULT_SETTINGS,
 	OpenAlephPluginSettings,
 	SampleSettingTab,
 } from './settings';
+
+const REST_API = '/api/2/';
+const METADATA_ENDPOINT = 'metadata';
 
 export default class OpenAlephPlugin extends Plugin {
 	settings!: OpenAlephPluginSettings;
@@ -26,7 +30,23 @@ export default class OpenAlephPlugin extends Plugin {
 
 		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
 		const statusBarItemEl = this.addStatusBarItem();
-		statusBarItemEl.setText('Status bar text');
+
+		// TODO: hacky way of stitching the URL together
+		const url = `${this.settings.instanceUrl}/${REST_API}/${METADATA_ENDPOINT}`;
+		const headers = { 'User-Agent': 'alephclient' };
+		let request = {
+			url,
+			headers,
+		};
+		let status = await requestUrl(request)
+			.then((response) =>
+				response.status === 200 ? 'available' : 'bad status',
+			)
+			.catch((err) => {
+				console.error(err);
+				return 'connection failed';
+			});
+		statusBarItemEl.setText(`Connection to OpenAleph API: ${status}`);
 
 		// This adds a simple command that can be triggered anywhere
 		this.addCommand({
