@@ -13,14 +13,22 @@ import {
 	SampleSettingTab,
 } from './settings';
 
+// Configures whether we want a fake static result for development or the real thing
+// Defaults to false in development unless you set FAKE_API=false in the environment.
+//
+// Provided by esbuild.config.mjs
+declare const USE_FAKE_API: boolean;
+
 const REST_API = '/api/2/';
 const METADATA_ENDPOINT = 'metadata';
 
 export default class OpenAlephPlugin extends Plugin {
 	settings!: OpenAlephPluginSettings;
+	searchOpenAleph!: (query: string) => Promise<Object>;
 
 	async onload() {
 		await this.loadSettings();
+		await this.initOpenAleph();
 
 		// This creates an icon in the left ribbon.
 		this.addRibbonIcon('dice', 'Sample', (_evt: MouseEvent) => {
@@ -47,6 +55,12 @@ export default class OpenAlephPlugin extends Plugin {
 				return 'connection failed';
 			});
 		statusBarItemEl.setText(`Connection to OpenAleph API: ${status}`);
+
+		console.log(
+			await this.searchOpenAleph('Hendrik Riehmer').catch(
+				(_err) => 'oops. Not implemented?',
+			),
+		);
 
 		// This adds a simple command that can be triggered anywhere
 		this.addCommand({
@@ -112,6 +126,19 @@ export default class OpenAlephPlugin extends Plugin {
 			DEFAULT_SETTINGS,
 			(await this.loadData()) as Partial<OpenAlephPluginSettings>,
 		);
+	}
+
+	async initOpenAleph() {
+		if (USE_FAKE_API) {
+			console.info('using FAKE API');
+			this.searchOpenAleph = (
+				await import('./openaleph_fake')
+			).searchOpenAleph;
+		} else {
+			this.searchOpenAleph = (
+				await import('./openaleph')
+			).searchOpenAleph;
+		}
 	}
 
 	async saveSettings() {

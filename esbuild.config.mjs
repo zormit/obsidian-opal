@@ -39,6 +39,10 @@ const context = await esbuild.context({
 	treeShaking: true,
 	outfile: 'main.js',
 	minify: prod,
+	define: {
+		// default to fake API for initial prototyping phase, but never in prod.
+		'USE_FAKE_API': prod ? 'false' : (process.env.FAKE_API === 'false' ? 'false' : 'true')
+	},
 });
 
 if (prod) {
