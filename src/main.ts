@@ -131,13 +131,9 @@ export default class OpenAlephPlugin extends Plugin {
 	async initOpenAleph() {
 		if (USE_FAKE_API) {
 			console.info('using FAKE API');
-			this.searchOpenAleph = (
-				await import('./openaleph_fake')
-			).searchOpenAleph;
+			this.searchOpenAleph = (await import('./openaleph_fake')).search;
 		} else {
-			this.searchOpenAleph = (
-				await import('./openaleph')
-			).searchOpenAleph;
+			this.searchOpenAleph = (await import('./openaleph')).search;
 		}
 	}
 

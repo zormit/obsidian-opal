@@ -1,4 +1,4 @@
-export async function searchOpenAleph(query: string): Promise<Object> {
+export async function search(query: string): Promise<Object> {
 	return new Promise((resolve) => {
 		resolve({ foo: 'bar', query });
 	});
