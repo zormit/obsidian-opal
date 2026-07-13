@@ -8,14 +8,12 @@ import {
 } from 'obsidian';
 import {
 	DEFAULT_SETTINGS,
-	MyPluginSettings,
+	OpenAlephPluginSettings,
 	SampleSettingTab,
 } from './settings';
 
-// Remember to rename these classes and interfaces!
-
-export default class MyPlugin extends Plugin {
-	settings!: MyPluginSettings;
+export default class OpenAlephPlugin extends Plugin {
+	settings!: OpenAlephPluginSettings;
 
 	async onload() {
 		await this.loadSettings();
@@ -92,7 +90,7 @@ export default class MyPlugin extends Plugin {
 		this.settings = Object.assign(
 			{},
 			DEFAULT_SETTINGS,
-			(await this.loadData()) as Partial<MyPluginSettings>,
+			(await this.loadData()) as Partial<OpenAlephPluginSettings>,
 		);
 	}
 
