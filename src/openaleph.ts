@@ -21,6 +21,8 @@ export interface OpenAlephClient {
 export default class HttpClient implements OpenAlephClient {
 	REST_API = '/api/2/';
 	METADATA_ENDPOINT = 'metadata';
+	SEARCH_ENDPOINT = 'search';
+
 	instanceUrl: string;
 	apiKey: string;
 
@@ -29,19 +31,40 @@ export default class HttpClient implements OpenAlephClient {
 		this.apiKey = apiKey;
 	}
 
-	async search(_query: string): Promise<SearchResult> {
-		return Promise.reject(new Error('Not implemented'));
+	searchUrl(query: string): URL {
+		let url = new URL(
+			`${this.REST_API}/${this.SEARCH_ENDPOINT}`,
+			this.instanceUrl,
+		);
+		url.searchParams.append('q', query);
+		return url;
 	}
 
-	metadataUrl(): string {
-		// TODO: fix hacky way of stitching the URL together
-		return `${this.instanceUrl}/${this.REST_API}/${this.METADATA_ENDPOINT}`;
+	async search(query: string): Promise<SearchResult> {
+		console.log(query);
+		const headers = {
+			'User-Agent': 'alephclient',
+			Authorization: this.apiKey,
+		};
+		let request = {
+			url: this.searchUrl(query).toString(),
+			headers,
+		};
+		console.log(request);
+		return requestUrl(request).json;
+	}
+
+	metadataUrl(): URL {
+		return new URL(
+			`${this.REST_API}/${this.METADATA_ENDPOINT}`,
+			this.instanceUrl,
+		);
 	}
 
 	async instanceStatus(): Promise<string> {
 		const headers = { 'User-Agent': 'alephclient' };
 		let request = {
-			url: this.metadataUrl(),
+			url: this.metadataUrl().toString(),
 			headers,
 		};
 		return requestUrl(request)

@@ -40,11 +40,10 @@ export default class OpenAlephPlugin extends Plugin {
 			`Connection to OpenAleph API: ${await this.openAlephClient.instanceStatus()}`,
 		);
 
-		console.log(
-			await this.openAlephClient
-				.search('Hendrik Riehmer')
-				.catch((_err) => 'oops. Not implemented?'),
-		);
+		let searchResult = await this.openAlephClient
+			.search('Hendrik Riehmer')
+			.catch((_err) => 'oops. Not implemented?');
+		console.log(searchResult);
 
 		// This adds a simple command that can be triggered anywhere
 		this.addCommand({
