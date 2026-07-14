@@ -42,7 +42,7 @@ export default class OpenAlephPlugin extends Plugin {
 
 		let searchResult = await this.openAlephClient
 			.search('Hendrik Riehmer')
-			.catch((_err) => 'oops. Not implemented?');
+			.catch((err) => `Open Aleph search request failed with ${err}`);
 		console.log(searchResult);
 
 		// This adds a simple command that can be triggered anywhere
