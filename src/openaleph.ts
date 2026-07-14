@@ -13,5 +13,5 @@ export interface SearchResult {
 }
 
 export async function search(_query: string): Promise<SearchResult> {
-	return Promise.reject('Not implemented');
+	return Promise.reject(new Error('Not implemented'));
 }
