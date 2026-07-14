@@ -5,14 +5,13 @@ import {
 	Modal,
 	Notice,
 	Plugin,
-	requestUrl,
 } from 'obsidian';
 import {
 	DEFAULT_SETTINGS,
 	OpenAlephPluginSettings,
 	OpenAlephSettingTab,
 } from './settings';
-import { SearchResult as OpenAlephSearchResult } from './openaleph';
+import { OpenAlephClient } from './openaleph';
 
 // Configures whether we want a fake static result for development or the real thing
 // Defaults to false in development unless you set FAKE_API=false in the environment.
@@ -20,12 +19,9 @@ import { SearchResult as OpenAlephSearchResult } from './openaleph';
 // Provided by esbuild.config.mjs
 declare const USE_FAKE_API: boolean;
 
-const REST_API = '/api/2/';
-const METADATA_ENDPOINT = 'metadata';
-
 export default class OpenAlephPlugin extends Plugin {
 	settings!: OpenAlephPluginSettings;
-	searchOpenAleph!: (query: string) => Promise<OpenAlephSearchResult>;
+	openAlephClient!: OpenAlephClient;
 
 	async onload() {
 		await this.loadSettings();
@@ -40,27 +36,14 @@ export default class OpenAlephPlugin extends Plugin {
 		// This adds a status bar item to the bottom of the app. Does not work on mobile apps.
 		const statusBarItemEl = this.addStatusBarItem();
 
-		// TODO: hacky way of stitching the URL together
-		const url = `${this.settings.instanceUrl}/${REST_API}/${METADATA_ENDPOINT}`;
-		const headers = { 'User-Agent': 'alephclient' };
-		let request = {
-			url,
-			headers,
-		};
-		let status = await requestUrl(request)
-			.then((response) =>
-				response.status === 200 ? 'available' : 'bad status',
-			)
-			.catch((err) => {
-				console.error(err);
-				return 'connection failed';
-			});
-		statusBarItemEl.setText(`Connection to OpenAleph API: ${status}`);
+		statusBarItemEl.setText(
+			`Connection to OpenAleph API: ${await this.openAlephClient.instanceStatus()}`,
+		);
 
 		console.log(
-			await this.searchOpenAleph('Hendrik Riehmer').catch(
-				(_err) => 'oops. Not implemented?',
-			),
+			await this.openAlephClient
+				.search('Hendrik Riehmer')
+				.catch((_err) => 'oops. Not implemented?'),
 		);
 
 		// This adds a simple command that can be triggered anywhere
@@ -119,12 +102,17 @@ export default class OpenAlephPlugin extends Plugin {
 	}
 
 	async initOpenAleph() {
+		let ClientConstructor;
 		if (USE_FAKE_API) {
 			console.info('using FAKE API');
-			this.searchOpenAleph = (await import('./openaleph_fake')).search;
+			ClientConstructor = (await import('./openaleph_fake')).default;
 		} else {
-			this.searchOpenAleph = (await import('./openaleph')).search;
+			ClientConstructor = (await import('./openaleph')).default;
 		}
+		this.openAlephClient = new ClientConstructor(
+			this.settings.instanceUrl,
+			this.settings.apiKey,
+		);
 	}
 
 	async saveSettings() {
