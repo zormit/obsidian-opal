@@ -29,4 +29,13 @@ export default defineConfig(
 		},
 	},
 	...obsidianmd.configs.recommended,
+	// TODO: Remove this once we get more towards something release-worthy.
+	{
+		files: ['**/*.ts'],
+		rules: {
+			'no-console': 'off',
+			'obsidianmd/rule-custom-message': 'off',
+			'eslint-comments/no-restricted-disable': 'off',
+		},
+	},
 );
