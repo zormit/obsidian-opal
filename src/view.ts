@@ -79,8 +79,8 @@ export class OpenAlephSearchView extends ItemView {
                         cls: 'openaleph-source-heading',
                     });
                     const item = this.resultsEl.createDiv({ cls: 'openaleph-result-item' });
-                    item.createEl('div', { text: entry.caption, cls: 'openaleph-result-title' });
-                    item.createEl('div', { text: entry.schema, cls: 'openaleph-result-snippet' });
+                    item.createEl('div', { text: entry.caption || 'Untitled', cls: 'openaleph-result-title' });
+                    item.createEl('div', { text: entry.schema.toString() || 'Thing', cls: 'openaleph-result-snippet' });
                     const actions = item.createDiv({ cls: 'openaleph-result-actions' });
                     const importBtn = actions.createEl('button', { text: 'Import as note' });
                     importBtn.onclick = async () => {
