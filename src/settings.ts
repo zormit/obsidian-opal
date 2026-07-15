@@ -23,6 +23,7 @@ export class OpenAlephSettingTab extends PluginSettingTab {
 	}
 
 	display(): void {
+		// TODO - allow the user to add multiple pairs of API key & instance URL
 		const { containerEl } = this;
 
 		containerEl.empty();
