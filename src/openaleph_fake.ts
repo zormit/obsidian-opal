@@ -2,12 +2,15 @@ import { SearchResult, OpenAlephClient } from './openaleph';
 import { Model, defaultModel } from '@opensanctions/followthemoney';
 
 export default class FakeClient implements OpenAlephClient {
+	async request(_url: URL): Promise<any> {
+		return {};
+	}
 	async search(_query: string): Promise<SearchResult> {
 		const model = new Model(defaultModel);
 		return new Promise((resolve) => {
 			resolve({
 				status: 'ok',
-				total: 20,
+				total: 2,
 				results: [
 					model.getEntity({
 						caption: 'Mr James Colin Moriarty',
@@ -20,6 +23,9 @@ export default class FakeClient implements OpenAlephClient {
 						id: 'us-npi-1518447499.6bc3ff871054bac37403bcbfa5ed070d9c4cf702',
 					}),
 				],
+				next: new URL(
+					'https://search.openaleph.org/api/2/entities?offset=2&limit=2&q=James+Moriarty',
+				),
 			});
 		});
 	}

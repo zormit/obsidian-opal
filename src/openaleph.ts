@@ -8,10 +8,34 @@ export interface SearchResult {
 	status: string;
 	results: Entity[];
 	total: number;
+	next: URL;
 }
+
+export interface Paginated<T> {
+	next(): Promise<Paginated<T>>;
+}
+
 export interface OpenAlephClient {
+	request(url: URL): Promise<any>;
 	search(query: string): Promise<SearchResult>;
 	instanceStatus(): Promise<string>;
+}
+
+export class PaginatedSearchResult implements Paginated<SearchResult> {
+	client: OpenAlephClient;
+	result: SearchResult;
+
+	constructor(client: OpenAlephClient, result: SearchResult) {
+		this.client = client;
+		this.result = result;
+	}
+
+	async next(): Promise<PaginatedSearchResult> {
+		return new PaginatedSearchResult(
+			this.client,
+			(await this.client.request(this.result.next)) as SearchResult,
+		);
+	}
 }
 
 export default class HttpClient implements OpenAlephClient {
