@@ -1,10 +1,11 @@
-import { Plugin, WorkspaceLeaf } from 'obsidian';
+import { Plugin, WorkspaceLeaf, Notice } from 'obsidian';
 import {
 	DEFAULT_SETTINGS,
 	OpenAlephPluginSettings,
 	OpenAlephSettingTab,
 } from './settings';
 import { OpenAlephSearchView, VIEW_TYPE_OPENALEPH_SEARCH } from './view';
+import type { ResizableSidebarSplit } from './types';
 // import { initOpenAleph } from './utils'
 
 export default class OpenAlephPlugin extends Plugin {
@@ -18,21 +19,24 @@ export default class OpenAlephPlugin extends Plugin {
 		// The second argument to registerView() is a factory function that returns an instance of the view you want to register.
 		this.registerView(VIEW_TYPE_OPENALEPH_SEARCH, (leaf) => new OpenAlephSearchView(leaf, this));
 
-		this.registerEvent(
-			this.app.workspace.on('active-leaf-change', (leaf) => {
-				if (leaf?.view.getViewType() === VIEW_TYPE_OPENALEPH_SEARCH) {
-					this.ensureMinSidebarWidth();
-				}
-			})
-		);
+		// TODO seems not to be needed anymore but don't delete yet!
+		// this.registerEvent(
+		// 	this.app.workspace.on('active-leaf-change', (leaf) => {
+		// 		if (leaf?.view.getViewType() === VIEW_TYPE_OPENALEPH_SEARCH) {
+		// 			this.ensureMinSidebarWidth();
+		// 		}
+		// 	})
+		// );
 
+		// eslint-disable-next-line obsidianmd/ui/sentence-case -- This is in proper sentence case.
 		this.addRibbonIcon('binoculars', 'OpenAleph Search', (_evt: MouseEvent) => {
-			this.activateView();
+			// eslint-disable-next-line obsidianmd/ui/sentence-case -- This is in proper sentence case.
+			this.activateView().catch((err) => { new Notice('Could not open the OpenAleph Search plugin') });
 		});
 
 		this.addCommand({
 			id: 'open-openaleph-search',
-			name: 'Open OpenAleph search',
+			name: 'Open search view',
 			callback: () => this.activateView(),
 		});
 
@@ -72,13 +76,14 @@ export default class OpenAlephPlugin extends Plugin {
 			await leaf.setViewState({ type: VIEW_TYPE_OPENALEPH_SEARCH, active: true });
 		}
 
-		const leftSplit = workspace.leftSplit as any;
+		// two assertions, as per TypeScript doc https://www.typescriptlang.org/docs/handbook/2/everyday-types.html#type-assertions
+		const leftSplit = workspace.leftSplit as unknown as ResizableSidebarSplit;
 
 		if (leftSplit?.collapsed) {
 			leftSplit.expand();
 		}
 
-		workspace.revealLeaf(leaf);
+		await workspace.revealLeaf(leaf);
 
 		this.ensureMinSidebarWidth();
 	}
@@ -86,7 +91,9 @@ export default class OpenAlephPlugin extends Plugin {
 	// adding the search icon to the left view requires us to resize the view
 	// in order to make room for the search bar and search icon
 	private ensureMinSidebarWidth(): void {
-		const leftSplit = this.app.workspace.leftSplit as any;
+		const leftSplit = this.app.workspace.leftSplit as unknown as ResizableSidebarSplit;
+		// setSize is deduced from decompiled Obsidian code, not in the official docs
+		// https://forum.obsidian.md/t/change-left-sidebar-width/80126/4
 		if (!leftSplit || typeof leftSplit.setSize !== 'function') return;
 
 		const MIN_WIDTH = 300;
@@ -108,23 +115,24 @@ export default class OpenAlephPlugin extends Plugin {
 			return;
 		}
 
+		// TODO seems not to be needed anymore but don't delete yet!
 		// `transitioned` CSS event: https://developer.mozilla.org/en-US/docs/Web/API/Element/transitionend_event
-		let done = false;
-		const onTransitionEnd = () => {
-			if (done) return;
-			done = true;
-			containerEl.removeEventListener('transitionend', onTransitionEnd);
-			applyWidth();
-		};
+		// let done = false;
+		// const onTransitionEnd = () => {
+		// 	if (done) return;
+		// 	done = true;
+		// 	containerEl.removeEventListener('transitionend', onTransitionEnd);
+		// 	applyWidth();
+		// };
 
-		containerEl.addEventListener('transitionend', onTransitionEnd);
+		// containerEl.addEventListener('transitionend', onTransitionEnd);
 
-		window.setTimeout(() => {
-			if (!done) {
-				done = true;
-				containerEl.removeEventListener('transitionend', onTransitionEnd);
-				applyWidth();
-			}
-		}, 250);
+		// window.setTimeout(() => {
+		// 	if (!done) {
+		// 		done = true;
+		// 		containerEl.removeEventListener('transitionend', onTransitionEnd);
+		// 		applyWidth();
+		// 	}
+		// }, 250);
 	}
 }

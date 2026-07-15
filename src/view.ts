@@ -22,6 +22,7 @@ export class OpenAlephSearchView extends ItemView {
     }
 
     getDisplayText(): string {
+        // eslint-disable-next-line obsidianmd/ui/sentence-case -- This is in proper sentence case.
         return 'Federated OpenAleph search';
     }
 
@@ -48,7 +49,9 @@ export class OpenAlephSearchView extends ItemView {
 
         searchBtn.onclick = () => this.handleSearch();
         this.inputEl.addEventListener('keydown', (evt) => {
-            if (evt.key === 'Enter') this.handleSearch();
+            // TODO make that Notice message more useful
+            // eslint-disable-next-line obsidianmd/ui/sentence-case -- This is in proper sentence case.
+            if (evt.key === 'Enter') this.handleSearch().catch((err) => new Notice('OpenAleph search failed.'));
         });
     }
 
@@ -72,15 +75,15 @@ export class OpenAlephSearchView extends ItemView {
             // TODO format nicely
             const total = results.total;
             if (total) {
-                this.resultsEl.createEl('div', { text: `Found ${total} results`, cls: 'openaleph-results-total' })
+                this.resultsEl.createDiv({ text: `Found ${total} results`, cls: 'openaleph-results-total' })
                 for (const entry of results.results) {
-                    this.resultsEl.createEl('div', {
+                    this.resultsEl.createDiv({
                         text: 'search.openaleph.org',
                         cls: 'openaleph-source-heading',
                     });
                     const item = this.resultsEl.createDiv({ cls: 'openaleph-result-item' });
-                    item.createEl('div', { text: entry.caption || 'Untitled', cls: 'openaleph-result-title' });
-                    item.createEl('div', { text: entry.schema.toString() || 'Thing', cls: 'openaleph-result-snippet' });
+                    item.createDiv({ text: entry.caption || 'Untitled', cls: 'openaleph-result-title' });
+                    item.createDiv({ text: entry.schema.toString() || 'Thing', cls: 'openaleph-result-snippet' });
                     const actions = item.createDiv({ cls: 'openaleph-result-actions' });
                     const importBtn = actions.createEl('button', { text: 'Import as note' });
                     importBtn.onclick = async () => {
@@ -88,10 +91,10 @@ export class OpenAlephSearchView extends ItemView {
                     };
                 }
             } else {
-                this.resultsEl.createEl('div', { text: 'No results found.', cls: 'openaleph-empty-state' });
+                this.resultsEl.createDiv({ text: 'No results found.', cls: 'openaleph-empty-state' });
             }
         } else {
-            this.resultsEl.createEl('div', {
+            this.resultsEl.createDiv({
                 text: `No results found`,
                 cls: 'openaleph-error',
             });
