@@ -46,8 +46,10 @@ export default class HttpClient implements OpenAlephClient {
 			headers,
 		};
 		console.log(request);
-		const data = await requestUrl(request).json;
-		return data as SearchResult;
+		// TODO: actually verify this somehow? The idea of using
+		// openapi-ts above would help, but maybe we don't need
+		// this level of verification for the prototype.
+		return (await requestUrl(request)).json as SearchResult;
 	}
 
 	metadataUrl(): URL {
