@@ -27,6 +27,18 @@ export default class HttpClient implements OpenAlephClient {
 		this.apiKey = apiKey;
 	}
 
+	async request(url: URL): Promise<any> {
+		const headers = {
+			'User-Agent': 'alephclient',
+			Authorization: this.apiKey,
+		};
+		let request = {
+			url: url.toString(),
+			headers,
+		};
+		return (await requestUrl(request)).json;
+	}
+
 	searchUrl(query: string): URL {
 		let url = new URL(
 			`${this.REST_API}/${this.SEARCH_ENDPOINT}`,
@@ -37,20 +49,10 @@ export default class HttpClient implements OpenAlephClient {
 	}
 
 	async search(query: string): Promise<SearchResult> {
-		console.log(query);
-		const headers = {
-			'User-Agent': 'alephclient',
-			Authorization: this.apiKey,
-		};
-		let request = {
-			url: this.searchUrl(query).toString(),
-			headers,
-		};
-		console.log(request);
 		// TODO: actually verify this somehow? The idea of using
 		// openapi-ts above would help, but maybe we don't need
 		// this level of verification for the prototype.
-		return (await requestUrl(request)).json as SearchResult;
+		return (await this.request(this.searchUrl(query))) as SearchResult;
 	}
 
 	metadataUrl(): URL {
