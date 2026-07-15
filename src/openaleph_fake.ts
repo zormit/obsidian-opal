@@ -7,6 +7,7 @@ export default class FakeClient implements OpenAlephClient {
 		return new Promise((resolve) => {
 			resolve({
 				status: 'ok',
+				total: 20,
 				results: [
 					model.getEntity({
 						caption: 'Mr James Colin Moriarty',

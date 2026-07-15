@@ -36,7 +36,7 @@ export class OpenAlephSettingTab extends PluginSettingTab {
 			)
 			.addText((text) =>
 				text
-					.setPlaceholder('Where does this placeholder go?')
+					.setPlaceholder('API key')
 					.setValue(this.plugin.settings.apiKey)
 					.onChange(async (value) => {
 						this.plugin.settings.apiKey = value;
@@ -50,7 +50,7 @@ export class OpenAlephSettingTab extends PluginSettingTab {
 			.setDesc('Your OpenAleph instance.')
 			.addText((text) =>
 				text
-					.setPlaceholder('Where does this placeholder go?')
+					.setPlaceholder('API URL')
 					.setValue(this.plugin.settings.instanceUrl)
 					.onChange(async (value) => {
 						this.plugin.settings.instanceUrl = value;

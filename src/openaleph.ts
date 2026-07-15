@@ -7,6 +7,7 @@ import { Entity } from '@opensanctions/followthemoney';
 export interface SearchResult {
 	status: string;
 	results: Entity[];
+	total: number;
 }
 export interface OpenAlephClient {
 	search(query: string): Promise<SearchResult>;
