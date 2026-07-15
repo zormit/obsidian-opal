@@ -1,14 +1,9 @@
 import { requestUrl } from 'obsidian';
+import { Entity } from '@opensanctions/followthemoney';
 
-// TODO: Eventually replace these types with FtM types
-// from https://www.npmjs.com/package/@alephdata/followthemoney ?
-//
-// Right now that packages seems outdated.
-export interface Entity {
-	id: string;
-	schema: string;
-	caption: string;
-}
+// TODO: Use OpenAleph API Spec + openapi-typescript instead?
+// seems this could also build us a client:
+// https://openapi-ts.dev/openapi-fetch/
 export interface SearchResult {
 	status: string;
 	results: Entity[];
@@ -51,7 +46,8 @@ export default class HttpClient implements OpenAlephClient {
 			headers,
 		};
 		console.log(request);
-		return requestUrl(request).json;
+		const data = await requestUrl(request).json;
+		return data as SearchResult;
 	}
 
 	metadataUrl(): URL {

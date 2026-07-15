@@ -40,10 +40,13 @@ export default class OpenAlephPlugin extends Plugin {
 			`Connection to OpenAleph API: ${await this.openAlephClient.instanceStatus()}`,
 		);
 
-		let searchResult = await this.openAlephClient
+		await this.openAlephClient
 			.search('Hendrik Riehmer')
+			.then((res) => {
+				console.log(res.status);
+				console.log(res.results[0]?.getCaption());
+			})
 			.catch((err) => `Open Aleph search request failed with ${err}`);
-		console.log(searchResult);
 
 		// This adds a simple command that can be triggered anywhere
 		this.addCommand({
