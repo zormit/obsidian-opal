@@ -18,6 +18,7 @@ export interface Paginated<T> {
 export interface OpenAlephClient {
 	request(url: URL): Promise<any>;
 	search(query: string): Promise<SearchResult>;
+	searchPerson(query: string): Promise<SearchResult>;
 	instanceStatus(): Promise<string>;
 }
 
@@ -72,11 +73,23 @@ export default class HttpClient implements OpenAlephClient {
 		return url;
 	}
 
+	searchSchemaUrl(query: string, schema: string): URL {
+		let url = this.searchUrl(query);
+		url.searchParams.append('filter:schema', schema);
+		return url;
+	}
+
 	async search(query: string): Promise<SearchResult> {
 		// TODO: actually verify this somehow? The idea of using
 		// openapi-ts above would help, but maybe we don't need
 		// this level of verification for the prototype.
 		return (await this.request(this.searchUrl(query))) as SearchResult;
+	}
+
+	async searchPerson(query: string): Promise<SearchResult> {
+		return (await this.request(
+			this.searchSchemaUrl(query, 'Person'),
+		)) as SearchResult;
 	}
 
 	metadataUrl(): URL {

@@ -29,6 +29,9 @@ export default class FakeClient implements OpenAlephClient {
 			});
 		});
 	}
+	async searchPerson(query: string): Promise<SearchResult> {
+		return this.search(query);
+	}
 	async instanceStatus(): Promise<string> {
 		return '<fake status>';
 	}
