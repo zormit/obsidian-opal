@@ -1,5 +1,5 @@
 import { requestUrl } from 'obsidian';
-import { Entity } from '@opensanctions/followthemoney';
+import { Entity, Model, defaultModel } from '@opensanctions/followthemoney';
 
 // TODO: Use OpenAleph API Spec + openapi-typescript instead?
 // seems this could also build us a client:
@@ -11,51 +11,77 @@ export interface SearchResult {
 	next: URL;
 }
 
+export interface FederatedSearchResults {
+	resultsForInstance: { [id: string]: SearchResult };
+	total: number;
+}
+
 export interface Paginated<T> {
 	next(): Promise<Paginated<T>>;
 }
 
+export interface OpenAlephPluginSettings {
+	importFolder: string;
+	instances: OpenAlephInstanceSettings[];
+}
+
+export interface OpenAlephInstanceSettings {
+	id: string;
+	name: string;
+	instanceUrl: string;
+	apiKey: string;
+	enabled: boolean;
+}
+
 export interface OpenAlephClient {
-	request(url: URL): Promise<any>;
-	search(query: string): Promise<SearchResult>;
-	searchPerson(query: string): Promise<SearchResult>;
-	instanceStatus(): Promise<string>;
+	// request(url: URL): Promise<any>;
+	search(query: string): Promise<FederatedSearchResults>;
+	searchPerson(query: string): Promise<FederatedSearchResults>;
+	// instanceStatus(): Promise<string>;
+	settingsById: { [id: string]: OpenAlephInstanceSettings };
 }
 
-export class PaginatedSearchResult implements Paginated<SearchResult> {
-	client: OpenAlephClient;
-	result: SearchResult;
+// export class PaginatedSearchResult implements Paginated<SearchResult> {
+// 	client: OpenAlephClient;
+// 	result: SearchResult;
+//
+// 	constructor(client: OpenAlephClient, result: SearchResult) {
+// 		this.client = client;
+// 		this.result = result;
+// 	}
+//
+// 	async next(): Promise<PaginatedSearchResult> {
+// 		return new PaginatedSearchResult(
+// 			this.client,
+// 			(await this.client.request(this.result.next)) as SearchResult,
+// 		);
+// 	}
+// }
 
-	constructor(client: OpenAlephClient, result: SearchResult) {
-		this.client = client;
-		this.result = result;
-	}
-
-	async next(): Promise<PaginatedSearchResult> {
-		return new PaginatedSearchResult(
-			this.client,
-			(await this.client.request(this.result.next)) as SearchResult,
-		);
-	}
-}
-
-export default class HttpClient implements OpenAlephClient {
+class HttpClient implements OpenAlephClient {
 	REST_API = '/api/2/';
 	METADATA_ENDPOINT = 'metadata';
 	SEARCH_ENDPOINT = 'search';
 
-	instanceUrl: string;
-	apiKey: string;
+	settingsById: { [id: string]: OpenAlephInstanceSettings };
 
-	constructor(instanceUrl: string, apiKey: string) {
-		this.instanceUrl = instanceUrl;
-		this.apiKey = apiKey;
+	constructor(settings: OpenAlephPluginSettings) {
+		this.settingsById = {};
+		for (const instance of settings.instances) {
+			this.settingsById[instance.id] = instance;
+		}
 	}
 
-	async request(url: URL): Promise<any> {
+	async request(url: URL, instanceId: string): Promise<any> {
+		const settings = this.settingsById[instanceId];
+		if (settings === undefined) {
+			return Promise.reject(
+				Error(`Settings for ${instanceId} not properly configured`),
+			);
+		}
 		const headers = {
 			'User-Agent': 'alephclient',
-			Authorization: this.apiKey,
+			Authorization: settings.apiKey,
 		};
 		let request = {
 			url: url.toString(),
@@ -64,54 +90,167 @@ export default class HttpClient implements OpenAlephClient {
 		return (await requestUrl(request)).json;
 	}
 
-	searchUrl(query: string): URL {
+	searchUrl(query: string, instanceId: string): URL {
+		const settings = this.settingsById[instanceId];
+		if (settings === undefined) {
+			// TODO: how to recover from this better?
+			return new URL('https://example.com');
+		}
 		let url = new URL(
 			`${this.REST_API}/${this.SEARCH_ENDPOINT}`,
-			this.instanceUrl,
+			settings.instanceUrl,
 		);
 		url.searchParams.append('q', query);
 		return url;
 	}
 
-	searchSchemaUrl(query: string, schema: string): URL {
-		let url = this.searchUrl(query);
+	searchSchemaUrl(query: string, schema: string, instanceId: string): URL {
+		let url = this.searchUrl(query, instanceId);
 		url.searchParams.append('filter:schema', schema);
 		return url;
 	}
 
-	async search(query: string): Promise<SearchResult> {
+	async instanceSearch(
+		query: string,
+		instanceId: string,
+	): Promise<SearchResult> {
 		// TODO: actually verify this somehow? The idea of using
 		// openapi-ts above would help, but maybe we don't need
 		// this level of verification for the prototype.
-		return (await this.request(this.searchUrl(query))) as SearchResult;
-	}
-
-	async searchPerson(query: string): Promise<SearchResult> {
 		return (await this.request(
-			this.searchSchemaUrl(query, 'Person'),
+			this.searchUrl(query, instanceId),
+			instanceId,
 		)) as SearchResult;
 	}
 
-	metadataUrl(): URL {
-		return new URL(
-			`${this.REST_API}/${this.METADATA_ENDPOINT}`,
-			this.instanceUrl,
-		);
+	async instanceSearchPerson(
+		query: string,
+		instanceId: string,
+	): Promise<SearchResult> {
+		return (await this.request(
+			this.searchSchemaUrl(query, 'Person', instanceId),
+			instanceId,
+		)) as SearchResult;
 	}
 
-	async instanceStatus(): Promise<string> {
-		const headers = { 'User-Agent': 'alephclient' };
-		let request = {
-			url: this.metadataUrl().toString(),
-			headers,
+	async search(query: string): Promise<FederatedSearchResults> {
+		let total = 0;
+		let resultsForInstance: { [id: string]: SearchResult } = {};
+
+		for (let [instanceId, settings] of Object.entries(this.settingsById)) {
+			if (settings.enabled) {
+				const results = await this.instanceSearch(query, instanceId);
+				total += results.total;
+				resultsForInstance[instanceId] = results;
+			}
+		}
+		return {
+			total,
+			resultsForInstance,
 		};
-		return requestUrl(request)
-			.then((response) =>
-				response.status === 200 ? 'available' : 'bad status',
-			)
-			.catch((err) => {
-				console.error(err);
-				return 'connection failed';
-			});
 	}
+
+	async searchPerson(query: string): Promise<FederatedSearchResults> {
+		// TODO
+		return this.search(query);
+	}
+
+	// metadataUrl(instanceId): URL {
+	// 	return new URL(
+	// 		`${this.REST_API}/${this.METADATA_ENDPOINT}`,
+	// 		this.instanceUrl,
+	// 	);
+	// }
+	//
+	// async instanceStatus(): Promise<string> {
+	// 	const headers = { 'User-Agent': 'alephclient' };
+	// 	let request = {
+	// 		url: this.metadataUrl().toString(),
+	// 		headers,
+	// 	};
+	// 	return requestUrl(request)
+	// 		.then((response) =>
+	// 			response.status === 200 ? 'available' : 'bad status',
+	// 		)
+	// 		.catch((err) => {
+	// 			console.error(err);
+	// 			return 'connection failed';
+	// 		});
+	// }
+}
+
+class FakeClient implements OpenAlephClient {
+	settingsById: { [id: string]: OpenAlephInstanceSettings };
+
+	// TODO: find a way without repeating this code?
+	constructor(settings: OpenAlephPluginSettings) {
+		this.settingsById = {};
+		for (const instance of settings.instances) {
+			this.settingsById[instance.id] = instance;
+		}
+	}
+
+	async instanceSearch(): Promise<SearchResult> {
+		const model = new Model(defaultModel);
+		return new Promise((resolve) => {
+			resolve({
+				status: 'ok',
+				total: 2,
+				results: [
+					model.getEntity({
+						caption: 'Mr James Colin Moriarty',
+						schema: 'Person',
+						id: 'gb-coh-psc-SC618974-u9ffdocvkfhzdsmx1-v1x6fbnyu.4bc2fa11f98c693aaf4d9b27548c201fa962b368',
+					}),
+					model.getEntity({
+						caption: 'MICHAEL JAMES MORIARTY',
+						schema: 'Person',
+						id: 'us-npi-1518447499.6bc3ff871054bac37403bcbfa5ed070d9c4cf702',
+					}),
+				],
+				next: new URL(
+					'https://search.openaleph.org/api/2/entities?offset=2&limit=2&q=James+Moriarty',
+				),
+			});
+		});
+	}
+
+	// TODO: how to not repeat this?
+	async search(query: string): Promise<FederatedSearchResults> {
+		let total = 0;
+		let resultsForInstance: { [id: string]: SearchResult } = {};
+
+		for (let [instanceId, settings] of Object.entries(this.settingsById)) {
+			if (settings.enabled) {
+				const results = await this.instanceSearch();
+				total += results.total;
+				resultsForInstance[instanceId] = results;
+			}
+		}
+		return {
+			total,
+			resultsForInstance,
+		};
+	}
+
+	async searchPerson(query: string): Promise<FederatedSearchResults> {
+		return this.search(query);
+	}
+}
+
+// Configures whether we want a fake static result for development or the real thing
+// Defaults to false in development unless you set FAKE_API=false in the environment.
+//
+// Provided by esbuild.config.mjs
+declare const USE_FAKE_API: boolean;
+
+export interface OpenAlephConstructor {
+	new (settings: OpenAlephPluginSettings): OpenAlephClient;
+}
+
+export default function openAlephClientFactory(): OpenAlephConstructor {
+	if (USE_FAKE_API) {
+		console.info('using FAKE API');
+	}
+	return USE_FAKE_API ? FakeClient : HttpClient;
 }
