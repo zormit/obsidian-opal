@@ -9,8 +9,6 @@ export class OpenAlephSearchView extends ItemView {
     private plugin: OpenAlephPlugin;
     private inputEl!: HTMLInputElement;
     private resultsEl!: HTMLElement;
-    // private settings!: OpenAlephPluginSettings;
-    // private openAlephClient!: OpenAlephClient;
 
     constructor(leaf: WorkspaceLeaf, plugin: OpenAlephPlugin) {
         super(leaf);
@@ -31,6 +29,7 @@ export class OpenAlephSearchView extends ItemView {
     }
 
     async onOpen(): Promise<void> {
+        console.log(Math.floor(Math.random() * Date.now()).toString(36));
         const container = this.contentEl;
         container.empty();
         container.addClass('openaleph-search-container');
@@ -63,15 +62,20 @@ export class OpenAlephSearchView extends ItemView {
         const query = this.inputEl.value.trim();
         if (!query) return;
 
-        // TODO check that there is at least one OpenAleph instance set in the settings
+        const enabledInstances = this.plugin.settings.instances.filter((instance) => instance.enabled);
+        if (enabledInstances.length === 0) {
+            new Notice("There are no enabled OpenAleph instances.");
+            return; 
+        }
 
         this.resultsEl.empty();
+        
+        // TODO RESUME HERE
+        enabledInstances.map((instance) => {
+            const apiClient: OpenAlephClient = await initOpenAleph(this.plugin);
+            const results = await apiClient.search(query);
 
-        // TODO only init once and reuse, don't init per search
-        const apiClient: OpenAlephClient = await initOpenAleph(this.plugin);
-        const results = await apiClient.search(query);
-
-        if (results.status === 'ok') {
+                    if (results.status === 'ok') {
             // TODO format nicely
             const total = results.total;
             if (total) {
@@ -99,5 +103,6 @@ export class OpenAlephSearchView extends ItemView {
                 cls: 'openaleph-error',
             });
         }
+        })
     }
 }

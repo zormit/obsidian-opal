@@ -1,11 +1,10 @@
 import { Plugin, WorkspaceLeaf, Notice } from 'obsidian';
 import {
 	DEFAULT_SETTINGS,
-	OpenAlephPluginSettings,
 	OpenAlephSettingTab,
 } from './settings';
 import { OpenAlephSearchView, VIEW_TYPE_OPENALEPH_SEARCH } from './view';
-import type { ResizableSidebarSplit } from './types';
+import type { ResizableSidebarSplit, OpenAlephInstanceSettings, OpenAlephPluginSettings } from './types';
 // import { initOpenAleph } from './utils'
 
 export default class OpenAlephPlugin extends Plugin {
@@ -19,14 +18,13 @@ export default class OpenAlephPlugin extends Plugin {
 		// The second argument to registerView() is a factory function that returns an instance of the view you want to register.
 		this.registerView(VIEW_TYPE_OPENALEPH_SEARCH, (leaf) => new OpenAlephSearchView(leaf, this));
 
-		// TODO seems not to be needed anymore but don't delete yet!
-		// this.registerEvent(
-		// 	this.app.workspace.on('active-leaf-change', (leaf) => {
-		// 		if (leaf?.view.getViewType() === VIEW_TYPE_OPENALEPH_SEARCH) {
-		// 			this.ensureMinSidebarWidth();
-		// 		}
-		// 	})
-		// );
+		this.registerEvent(
+			this.app.workspace.on('active-leaf-change', (leaf) => {
+				if (leaf?.view.getViewType() === VIEW_TYPE_OPENALEPH_SEARCH) {
+					this.ensureMinSidebarWidth();
+				}
+			})
+		);
 
 		// eslint-disable-next-line obsidianmd/ui/sentence-case -- This is in proper sentence case.
 		this.addRibbonIcon('binoculars', 'OpenAleph Search', (_evt: MouseEvent) => {
@@ -115,24 +113,23 @@ export default class OpenAlephPlugin extends Plugin {
 			return;
 		}
 
-		// TODO seems not to be needed anymore but don't delete yet!
 		// `transitioned` CSS event: https://developer.mozilla.org/en-US/docs/Web/API/Element/transitionend_event
-		// let done = false;
-		// const onTransitionEnd = () => {
-		// 	if (done) return;
-		// 	done = true;
-		// 	containerEl.removeEventListener('transitionend', onTransitionEnd);
-		// 	applyWidth();
-		// };
+		let done = false;
+		const onTransitionEnd = () => {
+			if (done) return;
+			done = true;
+			containerEl.removeEventListener('transitionend', onTransitionEnd);
+			applyWidth();
+		};
 
-		// containerEl.addEventListener('transitionend', onTransitionEnd);
+		containerEl.addEventListener('transitionend', onTransitionEnd);
 
-		// window.setTimeout(() => {
-		// 	if (!done) {
-		// 		done = true;
-		// 		containerEl.removeEventListener('transitionend', onTransitionEnd);
-		// 		applyWidth();
-		// 	}
-		// }, 250);
+		window.setTimeout(() => {
+			if (!done) {
+				done = true;
+				containerEl.removeEventListener('transitionend', onTransitionEnd);
+				applyWidth();
+			}
+		}, 250);
 	}
 }

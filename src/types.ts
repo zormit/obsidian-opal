@@ -6,3 +6,16 @@ export interface ResizableSidebarSplit {
     expand(): void;
     collapse(): void;
 }
+
+export interface OpenAlephPluginSettings {
+	importFolder: string;
+	instances: OpenAlephInstanceSettings[];
+}
+
+export interface OpenAlephInstanceSettings {
+	id: string;
+	name: string;
+	instanceUrl: string;
+	apiKey: string;
+	enabled: boolean;
+}
