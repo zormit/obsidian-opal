@@ -1,10 +1,11 @@
+/* eslint-disable obsidianmd/ui/sentence-case -- This is all valid sentence case */
+
 import { App, PluginSettingTab, Setting, requestUrl, Notice } from 'obsidian';
 import {
 	OpenAlephInstanceSettings,
 	OpenAlephPluginSettings,
 } from './openaleph';
 import OpenAlephPlugin from './main';
-import openAlephClientFactory from './openaleph';
 
 export const DEFAULT_INSTANCE: Omit<OpenAlephInstanceSettings, 'id'> = {
 	apiKey: 'key',
@@ -36,12 +37,14 @@ export class OpenAlephSettingTab extends PluginSettingTab {
 
 		containerEl.empty();
 
-		containerEl.createEl('h2', { text: 'OpenAleph federated search' });
+		new Setting(containerEl)
+			.setName('Configurate instances for federated search')
+			.setHeading();
 
 		new Setting(containerEl)
-			.setName('Follow the Money entity folder')
+			.setName('FollowTheMoney entity folder')
 			.setDesc(
-				'Importing a Follow the Money entity from an OpenAleph instance will save it here, as a Markdown note.',
+				'Importing a FollowTheMoney entity from an OpenAleph instance will save it here, as a Markdown note.',
 			)
 			.addText((text) =>
 				text
@@ -196,10 +199,12 @@ async function canConnect(instanceUrl: string, apiKey: string) {
 	try {
 		const res = await requestUrl(request);
 		// throws if the body isn't valid JSON
-		const body = res.json;
+		const body = res.json as unknown;
 		// 0, false or "" are valid JSON
 		return body !== undefined && body !== null;
-	} catch (err) {
+	} catch {
 		return false;
 	}
 }
+
+/* eslint-enable obsidianmd/ui/sentence-case -- Done with weird sentnces */
