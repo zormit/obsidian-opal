@@ -28,7 +28,6 @@ export class OpenAlephSearchView extends ItemView {
 	}
 
 	async onOpen(): Promise<void> {
-		console.log(Math.floor(Math.random() * Date.now()).toString(36));
 		const container = this.contentEl;
 		container.empty();
 		container.addClass('openaleph-search-container');
