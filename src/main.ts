@@ -1,9 +1,16 @@
 import { Plugin, WorkspaceLeaf, Notice } from 'obsidian';
 import { DEFAULT_SETTINGS, OpenAlephSettingTab } from './settings';
 import { OpenAlephSearchView, VIEW_TYPE_OPENALEPH_SEARCH } from './view';
-import type { ResizableSidebarSplit } from './types';
 import type { OpenAlephPluginSettings } from './openaleph';
-// import { initOpenAleph } from './utils'
+
+export interface ResizableSidebarSplit {
+	collapsed: boolean;
+	size: number;
+	containerEl: HTMLElement;
+	setSize(size: number): void;
+	expand(): void;
+	collapse(): void;
+}
 
 export default class OpenAlephPlugin extends Plugin {
 	// openAlephClient!: OpenAlephClient;
