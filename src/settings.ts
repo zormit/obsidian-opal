@@ -1,15 +1,17 @@
-import { App, PluginSettingTab, Setting } from 'obsidian';
+import { App, PluginSettingTab, Setting, requestUrl, Notice } from 'obsidian';
 import {
 	OpenAlephInstanceSettings,
 	OpenAlephPluginSettings,
 } from './openaleph';
 import OpenAlephPlugin from './main';
+import openAlephClientFactory from './openaleph';
 
 export const DEFAULT_INSTANCE: Omit<OpenAlephInstanceSettings, 'id'> = {
 	apiKey: 'key',
 	name: 'OpenAleph instance',
 	instanceUrl: 'https://search.openaleph.org',
 	enabled: true,
+	connectionValid: false,
 };
 
 export const DEFAULT_SETTINGS: OpenAlephPluginSettings = {
@@ -101,7 +103,56 @@ export class OpenAlephSettingTab extends PluginSettingTab {
 						await this.plugin.saveSettings();
 						this.display();
 					}),
-			);
+			)
+			.addExtraButton((btn) => {
+				const setIdleIcon = () => {
+					btn.setIcon(
+						instance.connectionValid ? 'badge-check' : 'plug-zap',
+					);
+					btn.extraSettingsEl.classList.toggle(
+						'instance-connection-valid',
+						instance.connectionValid,
+					);
+					btn.extraSettingsEl.classList.toggle(
+						'instance-connection-invalid',
+						!instance.connectionValid,
+					);
+				};
+
+				setIdleIcon();
+				btn.setTooltip('Test the connection');
+
+				btn.onClick(async () => {
+					btn.setDisabled(true);
+					btn.extraSettingsEl.classList.remove(
+						'instance-connection-valid',
+					);
+					btn.extraSettingsEl.classList.remove(
+						'instance-connection-invalid',
+					);
+					btn.setIcon('loader-2');
+					btn.extraSettingsEl.addClass('spin');
+
+					try {
+						instance.connectionValid = await canConnect(
+							instance.instanceUrl,
+							instance.apiKey,
+						);
+						await this.plugin.saveSettings();
+						new Notice(
+							instance.connectionValid
+								? 'Connection successful'
+								: 'Could not connect to instance. Check the URL and the API key.',
+						);
+					} finally {
+						btn.extraSettingsEl.classList.remove('spin');
+						btn.setDisabled(false);
+						setIdleIcon();
+					}
+				});
+
+				return btn;
+			});
 
 		new Setting(box).setName('Name').addText((text) =>
 			text.setValue(instance.name).onChange(async (value) => {
@@ -129,5 +180,26 @@ export class OpenAlephSettingTab extends PluginSettingTab {
 					await this.plugin.saveSettings();
 				}),
 		);
+	}
+}
+
+async function canConnect(instanceUrl: string, apiKey: string) {
+	const url = new URL('/api/2/metadata', instanceUrl);
+	const headers = {
+		'User-Agent': 'alephclient',
+		Authorization: apiKey,
+	};
+	const request = {
+		url: url.toString(),
+		headers,
+	};
+	try {
+		const res = await requestUrl(request);
+		// throws if the body isn't valid JSON
+		const body = res.json;
+		// 0, false or "" are valid JSON
+		return body !== undefined && body !== null;
+	} catch (err) {
+		return false;
 	}
 }
