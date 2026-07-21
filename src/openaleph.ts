@@ -52,7 +52,7 @@ interface Endpoint {
 	endpoint(): string;
 
 	/// Query parameters for the endpoint.
-	parameters(): object;
+	parameters(): URLSearchParams;
 
 	/// The body for the endpoint.
 	///
@@ -62,9 +62,15 @@ interface Endpoint {
 
 class SearchEndpoint implements Endpoint {
 	query: string;
+	schemaFilter: string[];
 
 	constructor(query: string) {
 		this.query = query;
+		this.schemaFilter = [];
+	}
+
+	filter(schema: string) {
+		this.schemaFilter.push(schema);
 	}
 
 	method(): Method {
@@ -75,8 +81,13 @@ class SearchEndpoint implements Endpoint {
 	}
 
 	/// Query parameters for the endpoint.
-	parameters(): object {
-		return { q: this.query };
+	parameters(): URLSearchParams {
+		let params = new URLSearchParams();
+		params.append('q', this.query);
+		this.schemaFilter.forEach((schema) =>
+			params.append('filter:schema', schema),
+		);
+		return params;
 	}
 
 	body(): object {
@@ -142,20 +153,8 @@ class HttpClient implements OpenAlephClient {
 			`${this.REST_API}/${endpoint.endpoint()}`,
 			settings.instanceUrl,
 		);
-		for (const [k, v] of Object.entries(endpoint.parameters())) {
-			url.searchParams.append(k, v);
-		}
-		return url;
-	}
-
-	searchUrl(query: string, instanceId: string): URL {
-		const endpoint = new SearchEndpoint(query);
-		return this.urlForEndpoint(endpoint, instanceId);
-	}
-
-	searchSchemaUrl(query: string, schema: string, instanceId: string): URL {
-		let url = this.searchUrl(query, instanceId);
-		url.searchParams.append('filter:schema', schema);
+		// Append all Endpoint query params
+		endpoint.parameters().forEach((v, k) => url.searchParams.append(k, v));
 		return url;
 	}
 
@@ -163,11 +162,13 @@ class HttpClient implements OpenAlephClient {
 		query: string,
 		instanceId: string,
 	): Promise<SearchResult> {
+		const endpoint = new SearchEndpoint(query);
+
 		// TODO: actually verify this somehow? The idea of using
 		// openapi-ts above would help, but maybe we don't need
 		// this level of verification for the prototype.
 		return (await this.request(
-			this.searchUrl(query, instanceId),
+			this.urlForEndpoint(endpoint, instanceId),
 			instanceId,
 		)) as SearchResult;
 	}
@@ -176,8 +177,10 @@ class HttpClient implements OpenAlephClient {
 		query: string,
 		instanceId: string,
 	): Promise<SearchResult> {
+		const endpoint = new SearchEndpoint(query);
+		endpoint.filter('Person');
 		return (await this.request(
-			this.searchSchemaUrl(query, 'Person', instanceId),
+			this.urlForEndpoint(endpoint, instanceId),
 			instanceId,
 		)) as SearchResult;
 	}
