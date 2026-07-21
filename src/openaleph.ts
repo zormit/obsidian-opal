@@ -42,6 +42,48 @@ export interface OpenAlephClient {
 	settingsById: { [id: string]: OpenAlephInstanceSettings };
 }
 
+type Method = 'GET' | 'OPTIONS' | 'POST' | 'PUT' | 'PATCH' | 'DELETE';
+
+interface Endpoint {
+	// The HTTP method to use for the endpoint.
+	method(): Method;
+
+	// The path to the endpoint.
+	endpoint(): string;
+
+	/// Query parameters for the endpoint.
+	parameters(): object;
+
+	/// The body for the endpoint.
+	///
+	/// Returns the `Content-Encoding` header for the data as well as the data itself.
+	body(): object;
+}
+
+class SearchEndpoint implements Endpoint {
+	query: string;
+
+	constructor(query: string) {
+		this.query = query;
+	}
+
+	method(): Method {
+		return 'GET';
+	}
+	endpoint(): string {
+		return 'entities';
+	}
+
+	/// Query parameters for the endpoint.
+	parameters(): object {
+		return { q: this.query };
+	}
+
+	body(): object {
+		return {};
+	}
+}
+
 // export class PaginatedSearchResult implements Paginated<SearchResult> {
 // 	client: OpenAlephClient;
 // 	result: SearchResult;
@@ -91,18 +133,24 @@ class HttpClient implements OpenAlephClient {
 		return (await requestUrl(request)).json;
 	}
 
-	searchUrl(query: string, instanceId: string): URL {
+	urlForEndpoint(endpoint: Endpoint, instanceId: string): URL {
 		const settings = this.settingsById[instanceId];
 		if (settings === undefined) {
-			// TODO: how to recover from this better?
-			return new URL('https://example.com');
+			throw new Error(`Instance settings not found for ${instanceId}`);
 		}
 		let url = new URL(
-			`${this.REST_API}/${this.SEARCH_ENDPOINT}`,
+			`${this.REST_API}/${endpoint.endpoint()}`,
 			settings.instanceUrl,
 		);
-		url.searchParams.append('q', query);
+		for (const [k, v] of Object.entries(endpoint.parameters())) {
+			url.searchParams.append(k, v);
+		}
 		return url;
+	}
+
+	searchUrl(query: string, instanceId: string): URL {
+		const endpoint = new SearchEndpoint(query);
+		return this.urlForEndpoint(endpoint, instanceId);
 	}
 
 	searchSchemaUrl(query: string, schema: string, instanceId: string): URL {
