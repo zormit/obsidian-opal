@@ -1,6 +1,13 @@
 /* eslint-disable obsidianmd/ui/sentence-case -- This is all valid sentence case */
 
-import { App, PluginSettingTab, Setting, requestUrl, Notice } from 'obsidian';
+import {
+	App,
+	Notice,
+	PluginSettingTab,
+	SecretComponent,
+	Setting,
+	requestUrl,
+} from 'obsidian';
 import {
 	OpenAlephInstanceSettings,
 	OpenAlephPluginSettings,
@@ -174,9 +181,8 @@ export class OpenAlephSettingTab extends PluginSettingTab {
 				}),
 		);
 
-		new Setting(box).setName('API key').addText((text) =>
-			text
-				.setPlaceholder('key')
+		new Setting(box).setName('API key').addComponent((el) =>
+			new SecretComponent(this.app, el)
 				.setValue(instance.apiKey)
 				.onChange(async (value) => {
 					instance.apiKey = value;
