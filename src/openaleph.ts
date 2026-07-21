@@ -1,4 +1,4 @@
-import { requestUrl } from 'obsidian';
+import { App, requestUrl } from 'obsidian';
 import { Entity, Model, defaultModel } from '@opensanctions/followthemoney';
 
 const SCHEMA_TYPE_SET = new Set(Object.keys(defaultModel.schemata));
@@ -126,8 +126,10 @@ class HttpClient implements OpenAlephClient {
 	SEARCH_ENDPOINT = 'search';
 
 	settingsById: { [id: string]: OpenAlephInstanceSettings };
+	app: App;
 
-	constructor(settings: OpenAlephPluginSettings) {
+	constructor(settings: OpenAlephPluginSettings, app: App) {
+		this.app = app;
 		this.settingsById = {};
 		for (const instance of settings.instances) {
 			this.settingsById[instance.id] = instance;
@@ -141,10 +143,13 @@ class HttpClient implements OpenAlephClient {
 				Error(`Settings for ${instanceId} not properly configured`),
 			);
 		}
-		const headers = {
+		let headers: Record<string, string> = {
 			'User-Agent': 'alephclient',
-			Authorization: settings.apiKeyName,
 		};
+		const apiKey = this.app.secretStorage.getSecret(settings.apiKeyName);
+		if (apiKey !== null) {
+			headers['Authorization'] = apiKey;
+		}
 		const request = {
 			url: url.toString(),
 			headers,
@@ -221,10 +226,12 @@ class HttpClient implements OpenAlephClient {
 }
 
 class FakeClient implements OpenAlephClient {
+	app: App;
 	settingsById: { [id: string]: OpenAlephInstanceSettings };
 
 	// TODO: find a way without repeating this code?
-	constructor(settings: OpenAlephPluginSettings) {
+	constructor(settings: OpenAlephPluginSettings, app: App) {
+		this.app = app;
 		this.settingsById = {};
 		for (const instance of settings.instances) {
 			this.settingsById[instance.id] = instance;
@@ -281,7 +288,7 @@ class FakeClient implements OpenAlephClient {
 declare const USE_FAKE_API: boolean;
 
 export interface OpenAlephConstructor {
-	new (settings: OpenAlephPluginSettings): OpenAlephClient;
+	new (settings: OpenAlephPluginSettings, app: App): OpenAlephClient;
 }
 
 export default function openAlephClientFactory(): OpenAlephConstructor {

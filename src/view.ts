@@ -86,7 +86,7 @@ export class OpenAlephSearchView extends ItemView {
 
 		this.resultsEl.empty();
 		const ClientFactory = openAlephClientFactory();
-		const apiClient = new ClientFactory(this.plugin.settings);
+		const apiClient = new ClientFactory(this.plugin.settings, this.app);
 		const search = new OpenAlephSearch(query);
 		if (filterForPerson) {
 			search.filter('Person');
