@@ -47,6 +47,7 @@ export class OpenAlephSearchView extends ItemView {
 		const searchBtn = searchRow.createEl('button', { text: 'Search' });
 		const facetDummy = container.createDiv({ cls: 'openaleph-facets' });
 		const personFilter = facetDummy.createEl('label', {
+			// eslint-disable-next-line obsidianmd/ui/sentence-case -- This is in proper sentence case.
 			attr: { title: 'Filter for Person' },
 		});
 		this.personFilterCheckbox = personFilter.createEl('input', {

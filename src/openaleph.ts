@@ -134,7 +134,7 @@ class HttpClient implements OpenAlephClient {
 		}
 	}
 
-	async request(url: URL, instanceId: string): Promise<any> {
+	async request(url: URL, instanceId: string): Promise<unknown> {
 		const settings = this.settingsById[instanceId];
 		if (settings === undefined) {
 			return Promise.reject(
