@@ -15,7 +15,7 @@ import {
 import OpenAlephPlugin from './main';
 
 export const DEFAULT_INSTANCE: Omit<OpenAlephInstanceSettings, 'id'> = {
-	apiKey: '',
+	apiKeyName: '',
 	name: 'OpenAleph instance',
 	instanceUrl: 'https://search.openaleph.org',
 	enabled: true,
@@ -145,7 +145,7 @@ export class OpenAlephSettingTab extends PluginSettingTab {
 
 					try {
 						const apiKey = this.app.secretStorage.getSecret(
-							instance.apiKey,
+							instance.apiKeyName,
 						);
 						instance.connectionValid = await canConnect(
 							instance.instanceUrl,
@@ -186,9 +186,9 @@ export class OpenAlephSettingTab extends PluginSettingTab {
 
 		new Setting(box).setName('API key').addComponent((el) =>
 			new SecretComponent(this.app, el)
-				.setValue(instance.apiKey)
+				.setValue(instance.apiKeyName)
 				.onChange(async (value) => {
-					instance.apiKey = value;
+					instance.apiKeyName = value;
 					await this.plugin.saveSettings();
 				}),
 		);

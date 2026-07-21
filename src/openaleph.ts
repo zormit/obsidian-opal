@@ -35,7 +35,7 @@ export interface OpenAlephInstanceSettings {
 	id: string;
 	name: string;
 	instanceUrl: string;
-	apiKey: string;
+	apiKeyName: string;
 	enabled: boolean;
 	connectionValid: boolean;
 }
@@ -143,7 +143,7 @@ class HttpClient implements OpenAlephClient {
 		}
 		const headers = {
 			'User-Agent': 'alephclient',
-			Authorization: settings.apiKey,
+			Authorization: settings.apiKeyName,
 		};
 		const request = {
 			url: url.toString(),
