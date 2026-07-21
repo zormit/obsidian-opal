@@ -37,7 +37,6 @@ export interface OpenAlephInstanceSettings {
 export interface OpenAlephClient {
 	// request(url: URL): Promise<any>;
 	search(query: string): Promise<FederatedSearchResults>;
-	searchPerson(query: string): Promise<FederatedSearchResults>;
 	// instanceStatus(): Promise<string>;
 	settingsById: { [id: string]: OpenAlephInstanceSettings };
 }
@@ -202,11 +201,6 @@ class HttpClient implements OpenAlephClient {
 		};
 	}
 
-	async searchPerson(query: string): Promise<FederatedSearchResults> {
-		// TODO
-		return this.search(query);
-	}
-
 	// metadataUrl(instanceId): URL {
 	// 	return new URL(
 	// 		`${this.REST_API}/${this.METADATA_ENDPOINT}`,
@@ -283,10 +277,6 @@ class FakeClient implements OpenAlephClient {
 			total,
 			resultsForInstance,
 		};
-	}
-
-	async searchPerson(query: string): Promise<FederatedSearchResults> {
-		return this.search(query);
 	}
 }
 
