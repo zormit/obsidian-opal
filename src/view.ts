@@ -1,5 +1,8 @@
 import { ItemView, Notice, WorkspaceLeaf } from 'obsidian';
-import openAlephClientFactory from './openaleph';
+import {
+	SearchEndpoint as OpenAlephSearch,
+	default as openAlephClientFactory,
+} from './openaleph';
 import OpenAlephPlugin from './main';
 
 export const VIEW_TYPE_OPENALEPH_SEARCH = 'openaleph-search-view';
@@ -8,6 +11,7 @@ export class OpenAlephSearchView extends ItemView {
 	private plugin: OpenAlephPlugin;
 	private inputEl!: HTMLInputElement;
 	private resultsEl!: HTMLElement;
+	private personFilterCheckbox!: HTMLInputElement;
 
 	constructor(leaf: WorkspaceLeaf, plugin: OpenAlephPlugin) {
 		super(leaf);
@@ -41,6 +45,13 @@ export class OpenAlephSearchView extends ItemView {
 		});
 
 		const searchBtn = searchRow.createEl('button', { text: 'Search' });
+		const facetDummy = container.createDiv({ cls: 'openaleph-facets' });
+		const personFilter = facetDummy.createEl('label', {
+			attr: { title: 'Filter for Person' },
+		});
+		this.personFilterCheckbox = personFilter.createEl('input', {
+			type: 'checkbox',
+		});
 
 		this.resultsEl = container.createDiv({ cls: 'openaleph-results' });
 
@@ -61,6 +72,7 @@ export class OpenAlephSearchView extends ItemView {
 
 	private async handleSearch(): Promise<void> {
 		const query = this.inputEl.value.trim();
+		const filterForPerson = this.personFilterCheckbox.checked;
 		if (!query) return;
 
 		// const enabledInstances = this.plugin.settings.instances.filter(
@@ -74,7 +86,11 @@ export class OpenAlephSearchView extends ItemView {
 		this.resultsEl.empty();
 		const ClientFactory = openAlephClientFactory();
 		const apiClient = new ClientFactory(this.plugin.settings);
-		const results = await apiClient.search(query);
+		const search = new OpenAlephSearch(query);
+		if (filterForPerson) {
+			search.filter('Person');
+		}
+		const results = await apiClient.search(search);
 
 		// TODO format nicely
 		const total = results.total;

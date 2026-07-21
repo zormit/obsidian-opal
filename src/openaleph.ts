@@ -1,6 +1,12 @@
 import { requestUrl } from 'obsidian';
 import { Entity, Model, defaultModel } from '@opensanctions/followthemoney';
 
+const SCHEMA_TYPE_SET = new Set(Object.keys(defaultModel.schemata));
+
+export function isSchemaType(value: string): boolean {
+	return SCHEMA_TYPE_SET.has(value);
+}
+
 // TODO: Use OpenAleph API Spec + openapi-typescript instead?
 // seems this could also build us a client:
 // https://openapi-ts.dev/openapi-fetch/
@@ -36,7 +42,7 @@ export interface OpenAlephInstanceSettings {
 
 export interface OpenAlephClient {
 	// request(url: URL): Promise<any>;
-	search(query: string): Promise<FederatedSearchResults>;
+	search(query: SearchEndpoint): Promise<FederatedSearchResults>;
 	// instanceStatus(): Promise<string>;
 	settingsById: { [id: string]: OpenAlephInstanceSettings };
 }
@@ -59,7 +65,7 @@ interface Endpoint {
 	body(): object;
 }
 
-class SearchEndpoint implements Endpoint {
+export class SearchEndpoint implements Endpoint {
 	query: string;
 	schemaFilter: string[];
 
@@ -69,6 +75,9 @@ class SearchEndpoint implements Endpoint {
 	}
 
 	filter(schema: string) {
+		if (!isSchemaType(schema)) {
+			throw Error(`Not a valid schema type: ${schema}`);
+		}
 		this.schemaFilter.push(schema);
 	}
 
@@ -158,11 +167,9 @@ class HttpClient implements OpenAlephClient {
 	}
 
 	async instanceSearch(
-		query: string,
+		endpoint: SearchEndpoint,
 		instanceId: string,
 	): Promise<SearchResult> {
-		const endpoint = new SearchEndpoint(query);
-
 		// TODO: actually verify this somehow? The idea of using
 		// openapi-ts above would help, but maybe we don't need
 		// this level of verification for the prototype.
@@ -172,25 +179,13 @@ class HttpClient implements OpenAlephClient {
 		)) as SearchResult;
 	}
 
-	async instanceSearchPerson(
-		query: string,
-		instanceId: string,
-	): Promise<SearchResult> {
-		const endpoint = new SearchEndpoint(query);
-		endpoint.filter('Person');
-		return (await this.request(
-			this.urlForEndpoint(endpoint, instanceId),
-			instanceId,
-		)) as SearchResult;
-	}
-
-	async search(query: string): Promise<FederatedSearchResults> {
+	async search(endpoint: SearchEndpoint): Promise<FederatedSearchResults> {
 		let total = 0;
 		let resultsForInstance: { [id: string]: SearchResult } = {};
 
 		for (let [instanceId, settings] of Object.entries(this.settingsById)) {
 			if (settings.enabled) {
-				const results = await this.instanceSearch(query, instanceId);
+				const results = await this.instanceSearch(endpoint, instanceId);
 				total += results.total;
 				resultsForInstance[instanceId] = results;
 			}
@@ -261,8 +256,7 @@ class FakeClient implements OpenAlephClient {
 		});
 	}
 
-	// TODO: how to not repeat this?
-	async search(query: string): Promise<FederatedSearchResults> {
+	async search(_query: SearchEndpoint): Promise<FederatedSearchResults> {
 		let total = 0;
 		let resultsForInstance: { [id: string]: SearchResult } = {};
 
