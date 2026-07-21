@@ -15,7 +15,7 @@ import {
 import OpenAlephPlugin from './main';
 
 export const DEFAULT_INSTANCE: Omit<OpenAlephInstanceSettings, 'id'> = {
-	apiKey: 'key',
+	apiKey: '',
 	name: 'OpenAleph instance',
 	instanceUrl: 'https://search.openaleph.org',
 	enabled: true,
@@ -144,9 +144,12 @@ export class OpenAlephSettingTab extends PluginSettingTab {
 					btn.extraSettingsEl.addClass('spin');
 
 					try {
+						const apiKey = this.app.secretStorage.getSecret(
+							instance.apiKey,
+						);
 						instance.connectionValid = await canConnect(
 							instance.instanceUrl,
-							instance.apiKey,
+							apiKey,
 						);
 						await this.plugin.saveSettings();
 						new Notice(
@@ -192,12 +195,14 @@ export class OpenAlephSettingTab extends PluginSettingTab {
 	}
 }
 
-async function canConnect(instanceUrl: string, apiKey: string) {
+async function canConnect(instanceUrl: string, apiKey: string | null) {
 	const url = new URL('/api/2/metadata', instanceUrl);
-	const headers = {
+	let headers: Record<string, string> = {
 		'User-Agent': 'alephclient',
-		Authorization: apiKey,
 	};
+	if (apiKey !== null) {
+		headers['Authorization'] = apiKey;
+	}
 	const request = {
 		url: url.toString(),
 		headers,
