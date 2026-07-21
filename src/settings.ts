@@ -196,11 +196,14 @@ export class OpenAlephSettingTab extends PluginSettingTab {
 }
 
 async function canConnect(instanceUrl: string, apiKey: string | null) {
-	const url = new URL('/api/2/metadata', instanceUrl);
+	let url = new URL('/api/2/metadata', instanceUrl);
 	let headers: Record<string, string> = {
 		'User-Agent': 'alephclient',
 	};
 	if (apiKey !== null) {
+		// If an API key is configured, we're calling the status endpoint.
+		// That endpoint requires authentication, so the API key gets validated.
+		url = new URL('/api/2/status', instanceUrl);
 		headers['Authorization'] = apiKey;
 	}
 	const request = {
@@ -213,7 +216,9 @@ async function canConnect(instanceUrl: string, apiKey: string | null) {
 		const body = res.json as unknown;
 		// 0, false or "" are valid JSON
 		return body !== undefined && body !== null;
-	} catch {
+	} catch (err) {
+		console.log('failed');
+		console.log(err);
 		return false;
 	}
 }
